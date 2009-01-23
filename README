@@ -1,0 +1,57 @@
+ Copyright 2008, Jovoto GmbH, tassmann@jovoto.com
+ Copyright 2006, Original Developed by Rain City Software, darryl.west@RainCitySoftware.com
+ version 0.3.0
+
+ License: Apache 2.0
+
+ Usage:
+   class MyClass << ActiveRecord::Base
+     has_flags [ :symbol, position, true/false, :symbol, ... ], [ options ]
+   end
+ Options:
+   :column = 'bit_flags'
+   :group => "group_name" , 
+
+ Attribute Accessors:
+   readers: name, name?
+   writer: name=(v)
+   where 'name' is the name of the bit field.  the (v) parameter can be true/false, "true"/"false", 0/1, 'yes'/'no',
+   or :yes/:no.  specifically, the following (v) inputs evaluate to true:
+     [ true, 'true', 'yes', :yes, 'ok', :ok, 1, '1' ]
+   all others, including nil evaluate false.
+   groups_name = [Array of flags] , not the plural
+   groups_name << name
+   groups_name 
+   group_ids  
+   group_ids = [Array of flag-ids]
+
+
+ Note: db table must include the column 'bit_flags' as an integer. Use the :column option to
+   override with an alternate name
+ Note: defaults are set in the 'after_initialized' callback.  If your model needs to use this
+   callback, define it in the class and invoke: init_flags.  Here is an example:
+
+   class MyClass << ActiveRecord::Base
+     has_flags [ :symbol, position, true/false, :symbol, ... ], [ options ]
+     def after_initialize
+       init_flags
+       ... do more stuff ...
+     end
+   end
+ 
+ Example Use: 
+   has_flags [ :active, true, :has_invoice, 3, :canceled, 8 ]
+     this example creates nine accessor methods, active?, active, active=(v), has_invoice?, has_invoice,
+     has_invoice=(v), canceled?, canceled and canceled=(v).  the 'bit_flags' bit flag is updated to follow 
+     the setters, and when the class is initialized as new (not after a find), the default (active=true) is set.
+
+   has_flags [ :active, true, :deleted 8 ], [ :column = 'status_flags' ]
+   The has_flags method registers the Symbol objects as ? and =(v) accessors.  it also takes care of
+   updating the underlying data element (defaults to 'bit_flags') when the =(v) methods are invoked.  So
+   if MyClass uses has_flags, then you could do the following:
+     myclass = MyClass.new
+     active = false if active?
+     has_invoice = false
+     myclass.save
+   This would change the myclass.bit_flags value, then send it to the database.
+
