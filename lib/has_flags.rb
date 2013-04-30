@@ -18,7 +18,7 @@
 #   readers: name, name?
 #   writer: name=(v)
 #   where 'name' is the name of the bit field.  the (v) parameter can be true/false, "true"/"false", 0/1, 'yes'/'no',
-#   or :yes/:no.  specifically, the following (v) inputs evaluate to true:
+#   or :yes/:no.  specifically, the following (v) in   evaluate to true:
 #     [ true, 'true', 'yes', :yes, 'ok', :ok, 1, '1' ]
 #   all others, including nil evaluate false.
 #   groups_name = [Array of flags] , not the plural
@@ -86,9 +86,28 @@ module RainCity
           
           # now declare the class Singleton methods
           class_eval { extend RainCity::Has::BitFlags::BitFlagMethods }
+
+          # and the named scopes
+          create_named_scopes bitflags
         end
         
         private
+        def create_named_scopes(bitflags)
+          if (self.bitflag_group)
+            scope "by_#{self.bitflag_group}", lambda { |flag_title| { :conditions => self.flags_conditions(flag_title)  } }
+          end
+          
+          
+          bitflags.each do |v|
+            case v
+              when Symbol, String
+                flag_title = v.to_s
+                scope_name = flag_title
+                scope scope_name, :conditions => self.flags_conditions(flag_title)
+            end
+          end
+        end
+        
         def create_groupflags
           group   = self.bitflag_group
           groups  = group.pluralize
@@ -117,7 +136,7 @@ module RainCity
           end
 
           define_method( group + "_ids" ) do
-            self.class.flags.collect{|name,id| name }.select{|name| self.send(name.to_sym)}
+            self.class.flags.select{|name,id| self.send(name.to_sym)}.collect{|array| array[1] }
           end
 
           define_method(group + "_ids=") do |ids|
@@ -141,6 +160,7 @@ module RainCity
 
                   default = false
                   position += 1
+                  #ActiveRecord::Base::scope name.to_s.pluralize, lambda{|c| {:conditions => flags_conditions(name)}} # does not allways work, why?
                 end
 
                 name = v.to_s
@@ -162,9 +182,10 @@ module RainCity
           end
           
           if true
-            define_method( 'after_initialize' ) do
-              initialize_flags
-            end
+            self.after_initialize :initialize_flags
+           # define_method( 'after_initialize' ) do
+           #   initialize_flags
+           # end
           end
         end
         
@@ -211,7 +232,7 @@ module RainCity
                   self.bitflag_group = val.to_s
                   #raise RuntimeError, 'Groups not supported for alpha version...'
                 else
-                  raise RuntimeError, "BitFlag: unrecognized option: " + opt.to_s
+                  raise RuntimeError, "BitFlag: unrecognized option: #{opt.class} #{options.class}" + opt.to_s
               end
             #end
           end
@@ -247,13 +268,13 @@ module RainCity
           self.find :all, :conditions => [ conditions ]
         end
 
-				def flags_conditions(*args)
-					flags = self.flags    
-				  msk = args.inject(0) do |n, name|
+        def flags_conditions(*args)
+          flags = self.flags    
+          msk = args.inject(0) do |n, name|
             n += flags[name.to_s]
           end
-          s = sprintf "(%s & %i)=%i", self.bitflag_column, msk, msk
-				end
+          s = sprintf "(%s.%s & %i)=%i",self.table_name, self.bitflag_column, msk, msk
+        end
       end
     end
   end
