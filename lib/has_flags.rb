@@ -94,7 +94,7 @@ module RainCity
         private
         def create_named_scopes(bitflags)
           if (self.bitflag_group)
-            scope "by_#{self.bitflag_group}", lambda { |flag_title| { :conditions => self.flags_conditions(flag_title)  } }
+            scope "by_#{self.bitflag_group}", ->(flag_title) { where(self.flags_conditions(flag_title)) }
           end
           
           
@@ -103,7 +103,7 @@ module RainCity
               when Symbol, String
                 flag_title = v.to_s
                 scope_name = flag_title
-                scope scope_name, :conditions => self.flags_conditions(flag_title)
+                scope scope_name, where(self.flags_conditions(flag_title))
             end
           end
         end
@@ -265,7 +265,7 @@ module RainCity
         #
         def find_by_flags(*args)
           conditions = self.flags_conditions(args)
-          self.find :all, :conditions => [ conditions ]
+          where([ conditions ])
         end
 
         def flags_conditions(*args)
