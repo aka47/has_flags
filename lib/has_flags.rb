@@ -103,7 +103,7 @@ module RainCity
               when Symbol, String
                 flag_title = v.to_s
                 scope_name = flag_title
-                scope scope_name, -> { where(self.flags_conditions(flag_title)) }
+                scope scope_name, ->(arg=nil){ where(self.flags_conditions(flag_title)) }
             end
           end
         end
