@@ -164,7 +164,7 @@ module RainCity
                 end
 
                 name = v.to_s
-              when Fixnum
+              when Integer
                 position = v
               when TrueClass, FalseClass
                 default = v
